@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>V11 - Fullscreen Core System</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: #0b0f19;
+      font-family: 'Poppins', sans-serif;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Background Ambient Lights */
+    .bg-glow-1 {
+      position: fixed;
+      top: -10%;
+      left: -10%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, rgba(0,0,0,0) 70%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .bg-glow-2 {
+      position: fixed;
+      bottom: -10%;
+      right: -10%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.12) 0%, rgba(0,0,0,0) 70%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ================= STAGE 1: Fullscreen Intro & Form ================= */
+    .full-page {
+      min-height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 30px 20px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .main-wrapper {
+      width: 100%;
+      max-width: 650px;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+    }
+
+    .main-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #38bdf8;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .sub-title {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      text-align: center;
+      margin-bottom: 35px;
+    }
+
+    .form-group {
+      margin-bottom: 22px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 16px 20px;
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      color: #f8fafc;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      border: none;
+      border-radius: 12px;
+      color: #0f172a;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4);
+    }
+
+    /* ================= STAGE 2: Fullscreen Termux / Terminal ================= */
+    .termux-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #05080c;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      font-family: 'Fira Code', monospace;
+      padding: 20px;
+    }
+
+    .termux-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+      margin-bottom: 15px;
+    }
+
+    .termux-title {
+      color: #38bdf8;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .termux-status {
+      color: #4ade80;
+      font-size: 0.85rem;
+    }
+
+    .termux-body {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.95rem;
+      color: #38bdf8;
+      padding-bottom: 30px;
+    }
+
+    .line {
+      word-break: break-all;
+      line-height: 1.5;
+    }
+    .line.green { color: #4ade80; }
+    .line.yellow { color: #facc15; }
+    .line.white { color: #f8fafc; }
+    .line.purple { color: #c084fc; }
+
+    .termux-footer {
+      height: 6px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .termux-progress {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8, #4ade80);
+      transition: width 0.1s ease;
+    }
+
+    /* Custom Scrollbar for Termux */
+    .termux-body::-webkit-scrollbar {
+      width: 6px;
+    }
+    .termux-body::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.3);
+      border-radius: 3px;
+    }
+
+    /* ================= STAGE 3: Fullscreen Success ================= */
+    .success-wrapper {
+      width: 100%;
+      max-width: 650px;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(74, 222, 128, 0.2);
+      border-radius: 24px;
+      padding: 50px 30px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+    }
+
+    .icon-circle {
+      width: 80px;
+      height: 80px;
+      background: rgba(74, 222, 128, 0.12);
+      border: 2px solid #4ade80;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 25px;
+      font-size: 2.2rem;
+      color: #4ade80;
+    }
+
+    .success-heading {
+      font-size: 2rem;
+      color: #4ade80;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .info-box {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 25px;
+      margin: 30px 0;
+      text-align: left;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 1rem;
+      color: #cbd5e1;
+    }
+
+    .info-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .info-row span.val {
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    .thank-you {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #f8fafc;
+      margin-top: 15px;
+    }
+
+    .credits-footer {
+      margin-top: 35px;
+      font-size: 0.9rem;
+      color: #64748b;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 20px;
+    }
+
+    .credits-footer b {
+      color: #a855f7;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-glow-1"></div>
+  <div class="bg-glow-2"></div>
+
+  <!-- STAGE 1: Fullscreen Intro Form -->
+  <div class="full-page" id="stage1">
+    <div class="main-wrapper">
+      <h1 class="main-title">Welcome Ahmed to your invention V11</h1>
+      <p class="sub-title">System Security & Database Bypass Gateway</p>
+
+      <div class="form-group">
+        <label for="accountName">Account Name</label>
+        <input type="text" id="accountName" value="EKahmed2A" placeholder="Enter Account ID">
+      </div>
+
+      <div class="form-group">
+        <label for="coinAmount">Coins Package</label>
+        <select id="coinAmount">
+          <option value="50000">50,000 eFootball Coins</option>
+          <option value="100000">100,000 eFootball Coins</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="serverRegion">Server Bypass Gateway</label>
+        <select id="serverRegion">
+          <option value="v11-kernel">V11 Main Kernel (Encrypted Protocol)</option>
+          <option value="v11-direct">V11 Direct Memory Injector</option>
+        </select>
+      </div>
+
+      <button class="btn-submit" onclick="launchTermux()">Transfer Coins</button>
+    </div>
+  </div>
+
+  <!-- STAGE 2: Fullscreen Termux Terminal -->
+  <div class="termux-container hidden" id="stage2">
+    <div class="termux-header">
+      <div class="termux-title">root@v11-kernel:~# ./inject_coins.sh</div>
+      <div class="termux-status">[EXECUTING]</div>
+    </div>
+    
+    <div class="termux-body" id="termuxLogs"></div>
+
+    <div class="termux-footer">
+      <div class="termux-progress" id="progressBar"></div>
+    </div>
+  </div>
+
+  <!-- STAGE 3: Fullscreen Completion -->
+  <div class="full-page hidden" id="stage3">
+    <div class="success-wrapper">
+      <div class="icon-circle">✓</div>
+      <h2 class="success-heading">Operation Completed</h2>
+      <p style="color: #94a3b8;">50,000 Coins successfully injected into target account.</p>
+
+      <div class="info-box">
+        <div class="info-row">
+          <span>Transferred Amount:</span>
+          <span class="val">50,000 Coins</span>
+        </div>
+        <div class="info-row">
+          <span>Target Account:</span>
+          <span class="val">EKahmed2A</span>
+        </div>
+        <div class="info-row">
+          <span>Encryption Status:</span>
+          <span class="val" style="color: #4ade80;">Bypassed & Delivered</span>
+        </div>
+      </div>
+
+      <div class="thank-you">Thank you for using V11</div>
+
+      <div class="credits-footer">
+        Developed by: <b>efootbollmabil</b> on TikTok
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const termuxCommands = [
+      { text: "Initializing V11 system environment...", type: "green" },
+      { text: "Pkg update && pkg upgrade -y", type: "white" },
+      { text: "Cloning repository: https://github.com/v11/efootball-coin-injector...", type: "white" },
+      { text: "Connecting to eFootball server node (185.220.101.4:443)...", type: "green" },
+      { text: "Bypassing SSL Pinning & Handshake Authentication...", type: "yellow" },
+      { text: "0x7FFE0010: Overwriting security registers in memory stack...", type: "purple" },
+      { text: "RSA-4096 Key Exchanged successfully [STATUS: OK]", type: "green" },
+      { text: "Decrypting system tokens for target: EKahmed2A...", type: "yellow" },
+      { text: "01000101 01001011 01100001 01101000 01101101 01100101 01100100 00110010 01000001", type: "purple" },
+      { text: "Bypassing KONAMI Anti-Cheat Firewall Layer 7...", type: "yellow" },
+      { text: "Injecting payload: 50,000 Coins -> EKahmed2A", type: "green" },
+      { text: "0xDEADBEEF: Packet verification confirmed by remote server", type: "purple" },
+      { text: "Flushing memory logs and securing bypass trace...", type: "white" },
+      { text: "Operation successful. Closing session...", type: "green" }
+    ];
+
+    function launchTermux() {
+      const accountInput = document.getElementById('accountName').value.trim();
+      if (!accountInput) {
+        alert("Please enter a valid Account Name!");
+        return;
+      }
+
+      // Transition to Stage 2 (Termux Fullscreen)
+      document.getElementById('stage1').classList.add('hidden');
+      document.getElementById('stage2').classList.remove('hidden');
+
+      const logsContainer = document.getElementById('termuxLogs');
+      const progressBar = document.getElementById('progressBar');
+      
+      let index = 0;
+      const total = termuxCommands.length;
+
+      const interval = setInterval(() => {
+        if (index < total) {
+          const item = termuxCommands[index];
+          const line = document.createElement('div');
+          line.className = `line ${item.type}`;
+          line.textContent = `[V11@termux ~]$ ${item.text}`;
+          
+          logsContainer.appendChild(line);
+          logsContainer.scrollTop = logsContainer.scrollHeight;
+
+          index++;
+          const percentage = (index / total) * 100;
+          progressBar.style.width = `${percentage}%`;
+        } else {
+          clearInterval(interval);
+          setTimeout(() => {
+            // Transition to Stage 3 (Fullscreen Completed)
+            document.getElementById('stage2').classList.add('hidden');
+            document.getElementById('stage3').classList.remove('hidden');
+          }, 1000);
+        }
+      }, 400);
+    }
+  </script>
+</body>
+</html>
